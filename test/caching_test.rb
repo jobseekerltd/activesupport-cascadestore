@@ -360,6 +360,26 @@ class CascadeStoreTest < ActiveSupport::TestCase
     assert_equal @store2.read('foo'), nil
   end
 
+  def test_write_last_store
+    @cache.write('foo', 'bar', last_store: true)
+    assert_equal @store1.read('foo'), nil
+    assert_equal @store2.read('foo'), 'bar'
+  end
+
+  def test_read_last_store
+    @store1.write('foo', 'bar')
+    @store2.write('foo', 'bar')
+    @store1.expects(:read_entry).never
+    assert_equal @cache.read('foo', last_store: true), 'bar'
+  end
+
+  def test_fetch_last_store
+    @store1.expects(:read_entry).never
+    @store1.expects(:write_entry).never
+    assert_equal 'baz', @cache.fetch('foo', last_store: true) { 'baz' }
+    assert_equal @store2.read('foo'), 'baz'
+  end
+
   def test_cascade_increment_partial_returns_num
     @store2.write('foo', 0)
     assert_equal @cache.increment('foo', 1), 1
