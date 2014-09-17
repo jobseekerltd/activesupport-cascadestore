@@ -380,6 +380,22 @@ class CascadeStoreTest < ActiveSupport::TestCase
     assert_equal @store2.read('foo'), 'baz'
   end
 
+  def test_clear
+    @cache.write('foo', 'bar')
+    @cache.clear
+    assert_equal @store1.read('foo'), nil
+    assert_equal @store2.read('foo'), nil
+  end
+
+  def test_cleanup
+    time = Time.now
+    @cache.write('foo', 'bar', expires_in: 30)
+    Time.stubs(:now).returns(time + 31)
+    @cache.cleanup
+    assert_equal @store1.read('foo'), nil
+    assert_equal @store2.read('foo'), nil
+  end
+
   def test_cascade_increment_partial_returns_num
     @store2.write('foo', 0)
     assert_equal @cache.increment('foo', 1), 1
