@@ -19,5 +19,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'activesupport', '~> 3.2'
   s.add_development_dependency 'rake'
+  s.add_development_dependency 'memcache-client'
   s.add_development_dependency 'mocha'
+  s.add_development_dependency 'memcached_store'
 end

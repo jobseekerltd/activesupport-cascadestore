@@ -1,6 +1,9 @@
 require 'logger'
 require 'abstract_unit'
 require 'active_support/cache'
+require 'active_support/cache'
+require 'active_support/cache/mem_cache_store'
+require 'memcached_store'
 
 # Tests the base functionality that should be identical across all cache stores.
 module CacheStoreBehavior
@@ -282,44 +285,7 @@ module CacheDeleteMatchedBehavior
   end
 end
 
-module CacheIncrementDecrementBehavior
-  def test_increment
-    @cache.write('foo', 1, :raw => true)
-    assert_equal 1, @cache.read('foo').to_i
-    assert_equal 2, @cache.increment('foo')
-    assert_equal 2, @cache.read('foo').to_i
-    assert_equal 3, @cache.increment('foo')
-    assert_equal 3, @cache.read('foo').to_i
-  end
-
-  def test_decrement
-    @cache.write('foo', 3, :raw => true)
-    assert_equal 3, @cache.read('foo').to_i
-    assert_equal 2, @cache.decrement('foo')
-    assert_equal 2, @cache.read('foo').to_i
-    assert_equal 1, @cache.decrement('foo')
-    assert_equal 1, @cache.read('foo').to_i
-  end
-end
-
-class CascadeStoreTest < ActiveSupport::TestCase
-  def setup
-    @cache = ActiveSupport::Cache.lookup_store(:cascade_store, {
-      :expires_in => 60,
-      :stores => [
-        :memory_store,
-        [:memory_store, :expires_in => 60]
-      ]
-    })
-    @store1 = @cache.stores[0]
-    @store2 = @cache.stores[1]
-  end
-
-  include CacheStoreBehavior
-  include CacheIncrementDecrementBehavior
-  include CacheDeleteMatchedBehavior
-  include EncodedKeyCacheBehavior
-
+module MultipleCacheBehaviour
   def test_default_child_store_options
     assert_equal @store1.options[:expires_in], 60
   end
@@ -387,6 +353,47 @@ class CascadeStoreTest < ActiveSupport::TestCase
     assert_equal @store2.read('foo'), nil
   end
 
+end
+
+module CacheIncrementDecrementBehavior
+  def test_increment
+    @cache.write('foo', 1, :raw => true)
+    assert_equal 1, @cache.read('foo').to_i
+    assert_equal 2, @cache.increment('foo')
+    assert_equal 2, @cache.read('foo').to_i
+    assert_equal 3, @cache.increment('foo')
+    assert_equal 3, @cache.read('foo').to_i
+  end
+
+  def test_decrement
+    @cache.write('foo', 3, :raw => true)
+    assert_equal 3, @cache.read('foo').to_i
+    assert_equal 2, @cache.decrement('foo')
+    assert_equal 2, @cache.read('foo').to_i
+    assert_equal 1, @cache.decrement('foo')
+    assert_equal 1, @cache.read('foo').to_i
+  end
+end
+
+class MemoryStoresTest < ActiveSupport::TestCase
+  def setup
+    @cache = ActiveSupport::Cache.lookup_store(:cascade_store, {
+      :expires_in => 60,
+      :stores => [
+        :memory_store,
+        [:memory_store, :expires_in => 60]
+      ]
+    })
+    @store1 = @cache.stores[0]
+    @store2 = @cache.stores[1]
+  end
+
+  include CacheStoreBehavior
+  include CacheIncrementDecrementBehavior
+  include CacheDeleteMatchedBehavior
+  include EncodedKeyCacheBehavior
+  include MultipleCacheBehaviour
+
   def test_cleanup
     time = Time.now
     @cache.write('foo', 'bar', expires_in: 30)
@@ -407,4 +414,24 @@ class CascadeStoreTest < ActiveSupport::TestCase
     assert_equal @cache.decrement('foo', 1), 0
     assert_equal @cache.read('foo'), 0
   end
+end
+
+class MemoryMemcachedStoresTest < ActiveSupport::TestCase
+  def setup
+    @cache = ActiveSupport::Cache.lookup_store(:cascade_store, {
+      :expires_in => 60,
+      :stores => [
+        :memory_store,
+        [:memcached_store, :expires_in => 60]
+      ]
+    })
+    @store1 = @cache.stores[0]
+    @store2 = @cache.stores[1]
+    @cache.clear
+  end
+
+  include CacheStoreBehavior
+  include CacheIncrementDecrementBehavior
+  include EncodedKeyCacheBehavior
+  include MultipleCacheBehaviour
 end
