@@ -79,16 +79,16 @@ module CacheStoreBehavior
 
   def test_read_and_write_compressed_small_data
     @cache.write('foo', 'bar', :compress => true)
-    raw_value = @cache.send(:read_entry, 'foo', {}).raw_value
+    value = @cache.send(:read_entry, 'foo', {}).value
     assert_equal 'bar', @cache.read('foo')
-    assert_equal 'bar', Marshal.load(raw_value)
+    assert_equal 'bar', value
   end
 
   def test_read_and_write_compressed_large_data
     @cache.write('foo', 'bar', :compress => true, :compress_threshold => 2)
-    raw_value = @cache.send(:read_entry, 'foo', {}).raw_value
+    value = @cache.send(:read_entry, 'foo', {}).value
     assert_equal 'bar', @cache.read('foo')
-    assert_equal 'bar', Marshal.load(Zlib::Inflate.inflate(raw_value))
+    assert_equal 'bar', value
   end
 
   def test_read_and_write_compressed_nil
@@ -173,6 +173,7 @@ module CacheStoreBehavior
 
     Time.stubs(:now).returns(time + 61)
     assert_nil @cache.read('foo')
+    Time.unstub(:now)
   end
 
   def test_race_condition_protection
@@ -184,6 +185,7 @@ module CacheStoreBehavior
       "baz"
     end
     assert_equal "baz", result
+    Time.unstub(:now)
   end
 
   def test_race_condition_protection_is_limited
@@ -195,6 +197,7 @@ module CacheStoreBehavior
       "baz"
     end
     assert_equal "baz", result
+    Time.unstub(:now)
   end
 
   def test_race_condition_protection_is_safe
@@ -211,6 +214,7 @@ module CacheStoreBehavior
     assert_equal "bar", @cache.read('foo')
     Time.stubs(:now).returns(time + 71)
     assert_nil @cache.read('foo')
+    Time.unstub(:now)
   end
 
   def test_crazy_key_characters
@@ -233,6 +237,14 @@ module CacheStoreBehavior
     assert_nil @cache.read("#{key}x")
     assert_equal({key => "bar"}, @cache.read_multi(key))
     assert @cache.delete(key)
+  end
+
+  def test_missed_read_writes_to_higher_level_stores
+    @store2.write('foo', 'bar')
+    assert_equal 'bar', @store2.read('foo')
+    assert_nil @store1.read('foo')
+    assert_equal 'bar', @cache.read('foo')
+    assert_equal 'bar', @store1.read('foo')
   end
 end
 
@@ -401,6 +413,7 @@ class MemoryStoresTest < ActiveSupport::TestCase
     @cache.cleanup
     assert_equal @store1.read('foo'), nil
     assert_equal @store2.read('foo'), nil
+    Time.unstub(:now)
   end
 
   def test_cascade_increment_partial_returns_num
