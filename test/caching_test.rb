@@ -70,8 +70,6 @@ module CacheStoreBehavior
   end
 
   def test_read_multi_with_expires
-    # sic - should not have to do this to make this pass.. :(
-    Time.unstub(:now)
     @cache.write('foo', 'bar', expires_in: 0.001)
     @cache.write('fu', 'baz')
     @cache.write('fud', 'biz')
@@ -150,6 +148,7 @@ module CacheStoreBehavior
   end
 
   def test_read_should_return_a_different_object_id_each_time_it_is_called
+    # WTF? why is that??
     @cache.write('foo', 'bar')
     assert_not_equal @cache.read('foo').object_id, @cache.read('foo').object_id
     value = @cache.read('foo')
@@ -175,16 +174,18 @@ module CacheStoreBehavior
 
     Time.stubs(:now).returns(time + 61)
     assert_nil @cache.read('foo')
+    Time.unstub(:now)
   end
 
   def test_race_condition_protection
     time = Time.now
-    @cache.write('foo', 'bar', :expires_in => 60)
+    @cache.write('foo', 'bar', expires_in: 60)
     Time.stubs(:now).returns(time + 61)
-    result = @cache.fetch('foo', :race_condition_ttl => 10) do
+    result = @cache.fetch('foo', race_condition_ttl: 10) do
       assert_equal 'bar', @cache.read('foo')
       "baz"
     end
+    Time.unstub(:now)
     assert_equal "baz", result
   end
 
@@ -196,6 +197,7 @@ module CacheStoreBehavior
       assert_equal nil, @cache.read('foo')
       "baz"
     end
+    Time.unstub(:now)
     assert_equal "baz", result
   end
 
@@ -213,6 +215,7 @@ module CacheStoreBehavior
     assert_equal "bar", @cache.read('foo')
     Time.stubs(:now).returns(time + 71)
     assert_nil @cache.read('foo')
+    Time.unstub(:now)
   end
 
   def test_crazy_key_characters
@@ -403,6 +406,7 @@ class MemoryStoresTest < ActiveSupport::TestCase
     @cache.cleanup
     assert_equal @store1.read('foo'), nil
     assert_equal @store2.read('foo'), nil
+    Time.unstub(:now)
   end
 
   def test_cascade_increment_partial_returns_num
