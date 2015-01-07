@@ -91,10 +91,7 @@ module ActiveSupport
             store_index = @stores.find_index do |store|
               entry = store.send(:read_entry, key, options) rescue nil
             end
-
-            @stores[0...store_index].each do |store|
-              store.send(:write_entry, key, entry, options)
-            end if store_index
+            puts store_index
           end
         end
         entry

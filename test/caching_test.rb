@@ -239,6 +239,13 @@ module CacheStoreBehavior
     assert_equal({key => "bar"}, @cache.read_multi(key))
     assert @cache.delete(key)
   end
+
+  def test_missed_read_writes_to_missed_store
+    @store2.write('foo', 'bar')
+    assert_nil @store1.read('foo')
+    assert_equal 'bar', @cache.read('foo')
+    assert_equal 'bar', @store1.read('foo')
+  end
 end
 
 # https://rails.lighthouseapp.com/projects/8994/tickets/6225-memcachestore-cant-deal-with-umlauts-and-special-characters
