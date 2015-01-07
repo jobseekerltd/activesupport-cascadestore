@@ -70,7 +70,9 @@ module CacheStoreBehavior
   end
 
   def test_read_multi_with_expires
-    @cache.write('foo', 'bar', :expires_in => 0.001)
+    # sic - should not have to do this to make this pass.. :(
+    Time.unstub(:now)
+    @cache.write('foo', 'bar', expires_in: 0.001)
     @cache.write('fu', 'baz')
     @cache.write('fud', 'biz')
     sleep(0.002)
@@ -78,21 +80,21 @@ module CacheStoreBehavior
   end
 
   def test_read_and_write_compressed_small_data
-    @cache.write('foo', 'bar', :compress => true)
-    raw_value = @cache.send(:read_entry, 'foo', {}).raw_value
+    @cache.write('foo', 'bar', compress: true)
+    value = @cache.send(:read_entry, 'foo', {}).value
     assert_equal 'bar', @cache.read('foo')
-    assert_equal 'bar', Marshal.load(raw_value)
+    assert_equal 'bar', value
   end
 
   def test_read_and_write_compressed_large_data
-    @cache.write('foo', 'bar', :compress => true, :compress_threshold => 2)
-    raw_value = @cache.send(:read_entry, 'foo', {}).raw_value
+    @cache.write('foo', 'bar', compress: true, compress_threshold: 2)
+    value = @cache.send(:read_entry, 'foo', {}).value
     assert_equal 'bar', @cache.read('foo')
-    assert_equal 'bar', Marshal.load(Zlib::Inflate.inflate(raw_value))
+    assert_equal 'bar', value
   end
 
   def test_read_and_write_compressed_nil
-    @cache.write('foo', nil, :compress => true)
+    @cache.write('foo', nil, compress: true)
     assert_nil @cache.read('foo')
   end
 
@@ -378,10 +380,10 @@ end
 class MemoryStoresTest < ActiveSupport::TestCase
   def setup
     @cache = ActiveSupport::Cache.lookup_store(:cascade_store, {
-      :expires_in => 60,
+      expires_in: 60,
       :stores => [
         :memory_store,
-        [:memory_store, :expires_in => 60]
+        [:memory_store, expires_in: 60]
       ]
     })
     @store1 = @cache.stores[0]
@@ -419,10 +421,10 @@ end
 class MemoryMemcachedStoresTest < ActiveSupport::TestCase
   def setup
     @cache = ActiveSupport::Cache.lookup_store(:cascade_store, {
-      :expires_in => 60,
+      expires_in: 60,
       :stores => [
         :memory_store,
-        [:memcached_store, :expires_in => 60]
+        [:memcached_store, expires_in: 60]
       ]
     })
     @store1 = @cache.stores[0]
