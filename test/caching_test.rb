@@ -147,14 +147,6 @@ module CacheStoreBehavior
     assert !@cache.exist?('foo')
   end
 
-  def test_read_should_return_a_different_object_id_each_time_it_is_called
-    @cache.write('foo', 'bar')
-    assert_not_equal @cache.read('foo').object_id, @cache.read('foo').object_id
-    value = @cache.read('foo')
-    value << 'bingo'
-    assert_not_equal value, @cache.read('foo')
-  end
-
   def test_original_store_objects_should_not_be_immutable
     bar = 'bar'
     @cache.write('foo', bar)
