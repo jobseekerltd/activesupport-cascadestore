@@ -233,7 +233,6 @@ module CacheStoreBehavior
 
   def test_missed_read_writes_to_higher_level_stores
     @store2.write('foo', 'bar')
-    assert_equal 'bar', @store2.read('foo')
     assert_nil @store1.read('foo')
     assert_equal 'bar', @cache.read('foo')
     assert_equal 'bar', @store1.read('foo')
