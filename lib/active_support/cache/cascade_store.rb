@@ -88,9 +88,10 @@ module ActiveSupport
           entry = @stores.last.send(:read_entry, key, options)
         else
           synchronize do
-            @stores.detect do |store|
+            store_index = @stores.find_index do |store|
               entry = store.send(:read_entry, key, options) rescue nil
             end
+            write_missing_entry(key, entry, options, store_index) if store_index
           end
         end
         entry
@@ -108,6 +109,14 @@ module ActiveSupport
       def delete_entry(key, options) # :nodoc:
         cascade(:delete_entry, key, options)
         true
+      end
+
+      private
+
+      def write_missing_entry(key, entry, options, store_index)
+        @stores[0...store_index].each do |store|
+          store.send(:write_entry, key, entry, options)
+        end
       end
     end
   end
