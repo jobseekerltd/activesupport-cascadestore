@@ -10,6 +10,15 @@ Gem::Specification.new do |s|
   s.summary     = %q{write-through cache store that allows you to chain multiple cache stores together}
   s.description = %q{write-through cache store that allows you to chain multiple cache stores together}
 
+  # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
+  # to allow pushing to a single host or delete this section to allow pushing to any host.
+  if s.respond_to?(:metadata)
+    s.metadata['allowed_push_host'] = 'https://rubygems.pkg.github.com/jobseekerltd'
+  else
+    raise "RubyGems 2.0 or newer is required to protect against " \
+      "public gem pushes."
+  end
+
   s.rubyforge_project = 'activesupport-cascadestore'
 
   s.files         = `git ls-files`.split($\)
